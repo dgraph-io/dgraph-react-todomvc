@@ -1,6 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
+import React from 'react'
+import ReactDOM from 'react-dom'
+import 'todomvc-app-css/index.css'
 
-ReactDOM.render(<App />, document.getElementById('root'));
+import TodoApp from './TodoApp'
+import TodoModel from './TodoModel'
+
+const model = new TodoModel('react-todos')
+
+function render() {
+  ReactDOM.render(
+    <TodoApp model={model}/>,
+    document.getElementById('root'),
+  )
+}
+
+model.subscribe(render)
+render()
