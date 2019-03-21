@@ -1,9 +1,32 @@
 import Utils from './Utils'
 
+import * as dgraph from 'dgraph-js-http'
+
 export default class TodoModel {
-  constructor(key) {
-    this.key = key
-    this.todos = Utils.store(key)
+  constructor() {
+    const clientStub = new dgraph.DgraphClientStub("http://localhost:8080")
+    this.dgraph = new dgraph.DgraphClient(clientStub)
+
+    this.todos = []
+    this.fetchAndInform()
+  }
+
+  async fetchAndInform() {
+    this.todos = await this.fetchTodos()
+    this.inform()
+  }
+
+  async fetchTodos() {
+    const query = `{
+      todos(func: has(is_todo))
+      {
+        uid
+        title
+        completed
+      }
+    }`
+    const res = await this.dgraph.newTxn().query(query)
+    return res.data.todos || []
   }
 
 	onChanges = []
@@ -12,13 +35,12 @@ export default class TodoModel {
 		this.onChanges.push(onChange)
 
 	inform = () => {
-		Utils.store(this.key, this.todos)
 		this.onChanges.forEach(cb => cb())
 	}
 
 	addTodo = title => {
 		this.todos = this.todos.concat({
-			id: Utils.uuid(),
+			uid: 123,
 			title: title,
 			completed: false,
 		})

@@ -5,7 +5,7 @@ import 'todomvc-app-css/index.css'
 import TodoApp from './TodoApp'
 import TodoModel from './TodoModel'
 
-const model = new TodoModel('react-todos')
+const model = new TodoModel()
 
 function render() {
   ReactDOM.render(
