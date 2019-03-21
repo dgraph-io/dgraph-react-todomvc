@@ -65,7 +65,7 @@ export default class TodoModel {
 		// we use map() and filter() everywhere instead of mutating the array or
 		// todo items themselves.
 		this.todos = this.todos.map(function (todo) {
-			return Utils.extend({}, todo, {completed: checked});
+			return Object.assign({}, todo, {completed: checked});
 		})
 
 		this.inform()
@@ -75,31 +75,51 @@ export default class TodoModel {
 		this.todos = this.todos.map(function (todo) {
 			return todo !== todoToToggle ?
 				todo :
-				Utils.extend({}, todo, {completed: !todo.completed});
+				Object.assign({}, todo, {completed: !todo.completed});
 		})
 
 		this.inform()
 	}
 
-	destroy = todo => {
-		this.todos = this.todos.filter(function (candidate) {
-			return candidate !== todo;
-		})
-
-		this.inform()
+  async destroy(todo) {
+    try {
+      await this.dgraph.newTxn().mutate({
+        deleteJson: {
+          uid: todo.uid
+        },
+        commitNow: true,
+      })
+    } catch (error) {
+      alert('Database write failed!')
+      console.error('Network error', error)
+    } finally {
+      this.fetchAndInform()
+    }
 	}
 
 	save = (todoToSave, text) => {
 		this.todos = this.todos.map(function (todo) {
-			return todo !== todoToSave ? todo : Utils.extend({}, todo, {title: text})
+			return todo !== todoToSave ? todo : Object.assign({}, todo, {title: text})
 		})
 
 		this.inform()
 	}
 
-	clearCompleted = () => {
-		this.todos = this.todos.filter(todo => !todo.completed)
+	async clearCompleted() {
+    try {
+      const uidsToDelete = this.todos
+          .filter(({ completed }) => completed)
+          .map(({ uid }) => ({ uid }))
 
-		this.inform()
+      await this.dgraph.newTxn().mutate({
+        deleteJson: uidsToDelete,
+        commitNow: true,
+      })
+    } catch (error) {
+      alert('Database write failed!')
+      console.error('Network error', error)
+    } finally {
+      this.fetchAndInform()
+    }
 	}
 }
