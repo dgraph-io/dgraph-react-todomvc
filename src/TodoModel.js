@@ -38,14 +38,25 @@ export default class TodoModel {
 		this.onChanges.forEach(cb => cb())
 	}
 
-	addTodo = title => {
-		this.todos = this.todos.concat({
-			uid: 123,
-			title: title,
-			completed: false,
-		})
+  async addTodo(title) {
+    try {
+      const res = await this.dgraph.newTxn().mutate({
+        setJson: {
+          uid: "_:newTodo",
+          is_todo: true,
+          title,
+          completed: false,
+        },
+        commitNow: true,
+      })
 
-		this.inform()
+      console.info('Created new todo with uid', res.data.uids.newTodo)
+    } catch (error) {
+      alert('Database write failed!')
+      console.error('Network error', error)
+    } finally {
+      this.fetchAndInform()
+    }
 	}
 
 	toggleAll = checked => {
