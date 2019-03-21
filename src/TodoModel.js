@@ -1,5 +1,3 @@
-import Utils from './Utils'
-
 import * as dgraph from 'dgraph-js-http'
 
 export default class TodoModel {
@@ -13,6 +11,10 @@ export default class TodoModel {
 
   async fetchAndInform() {
     this.todos = await this.fetchTodos()
+
+    this.todos.forEach(Object.freeze)
+    Object.freeze(this.todos)
+
     this.inform()
   }
 
@@ -59,26 +61,37 @@ export default class TodoModel {
     }
 	}
 
-	toggleAll = checked => {
-		// Note: it's usually better to use immutable data structures since they're
-		// easier to reason about and React works very well with them. That's why
-		// we use map() and filter() everywhere instead of mutating the array or
-		// todo items themselves.
-		this.todos = this.todos.map(function (todo) {
-			return Object.assign({}, todo, {completed: checked});
-		})
+	async toggleAll(completed) {
+    try {
+      const toggleJson = this.todos
+          .map(({ uid }) => ({ uid, completed }))
 
-		this.inform()
+      await this.dgraph.newTxn().mutate({
+        setJson: toggleJson,
+        commitNow: true,
+      })
+    } catch (error) {
+      console.error('Network error', error)
+    } finally {
+      this.fetchAndInform()
+    }
+
 	}
 
-	toggle = todoToToggle => {
-		this.todos = this.todos.map(function (todo) {
-			return todo !== todoToToggle ?
-				todo :
-				Object.assign({}, todo, {completed: !todo.completed});
-		})
-
-		this.inform()
+	async toggle(todoToToggle) {
+    try {
+      await this.dgraph.newTxn().mutate({
+        setJson: {
+          uid: todoToToggle.uid,
+          completed: !todoToToggle.completed,
+        },
+        commitNow: true,
+      })
+    } catch (error) {
+      console.error('Network error', error)
+    } finally {
+      this.fetchAndInform()
+    }
 	}
 
   async destroy(todo) {
@@ -97,12 +110,20 @@ export default class TodoModel {
     }
 	}
 
-	save = (todoToSave, text) => {
-		this.todos = this.todos.map(function (todo) {
-			return todo !== todoToSave ? todo : Object.assign({}, todo, {title: text})
-		})
-
-		this.inform()
+	async save(todoToSave, newTitle) {
+    try {
+      await this.dgraph.newTxn().mutate({
+        setJson: {
+          uid: todoToSave.uid,
+          title: newTitle,
+        },
+        commitNow: true,
+      })
+    } catch (error) {
+      console.error('Network error', error)
+    } finally {
+      this.fetchAndInform()
+    }
 	}
 
 	async clearCompleted() {
