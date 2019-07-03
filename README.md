@@ -1,4 +1,4 @@
-# TodoMVC app in React with Dgraph as a GraphQL storage layer
+# TodoMVC in React with Dgraph as a GraphQL storage layer
 
 You can read a step by step walkthrough of how we built this at the [Dgraph Blog](https://blog.dgraph.io/post/building-todo-list-react-dgraph/)
 
